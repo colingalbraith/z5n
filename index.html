@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Focus Time | Minimalist Clock</title>
+   <script src="https://cdn.tailwindcss.com"></script>
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+   <style>
+       :root {
+           /* Default Light Theme Variables */
+           --bg-primary-start: #f9fafb; /* slate-50 */
+           --bg-primary-end: #eff6ff; /* blue-50 */
+           --bg-secondary: #ffffff; /* white */
+           --text-primary: #1f2937; /* gray-800 */
+           --text-secondary: #4b5563; /* gray-600 */
+           --accent-color: #4f46e5; /* indigo-600 */
+           --accent-text-color: #ffffff; /* white */
+           --button-bg: #e5e7eb; /* gray-200 */
+           --button-text: #374151; /* gray-700 */
+           --glass-bg: rgba(255, 255, 255, 0.7);
+           --glass-border: rgba(255, 255, 255, 0.2);
+           --shadow-color-rgb: 0, 0, 0;
+           --shadow-opacity-strong: 0.1;
+           --shadow-opacity-light: 0.06;
+           --shadow: 0 4px 6px -1px rgba(var(--shadow-color-rgb), var(--shadow-opacity-strong)), 0 2px 4px -1px rgba(var(--shadow-color-rgb), var(--shadow-opacity-light));
+           --ring-color: #a5b4fc; /* indigo-200 for focus rings */
+           --border-color: #e5e7eb; /* gray-200 */
+           --progress-color: #4f46e5; /* indigo-600 - same as accent by default */
+       }
+      
+       .flip-card {
+           perspective: 1000px;
+       }
+      
+       .flip-card-inner {
+           position: relative;
+           width: 100%;
+           height: 100%;
+           transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+           transform-style: preserve-3d;
+       }
+      
+       .flip-card-front, .flip-card-back {
+           position: absolute;
+           width: 100%;
+           height: 100%;
+           backface-visibility: hidden;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           border-radius: 0.75rem;
+           box-shadow: var(--shadow);
+       }
+      
+       .flip-card-back {
+           transform: rotateX(180deg);
+       }
+      
+       .flip-animate {
+           animation: flip 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+       }
+      
+       @keyframes flip {
+           0% { transform: rotateX(0deg); }
+           50% { transform: rotateX(90deg); }
+           100% { transform: rotateX(0deg); }
+       }
+      
+       .progress-ring {
+           transition: stroke-dashoffset 0.3s ease;
+           filter: drop-shadow(0 0 2px rgba(79, 70, 229, 0.3));
+       }
+      
+       .glass-effect {
+           backdrop-filter: blur(10px);
+           background: var(--glass-bg);
+           border: 1px solid var(--glass-border);
+       }
+      
+       .fade-in {
+           animation: fadeIn 0.3s ease-in-out;
+       }
+      
+       @keyframes fadeIn {
+           from { opacity: 0; transform: translateY(10px); }
+           to { opacity: 1; transform: translateY(0); }
+       }
+      
+       .pulse-glow {
+           animation: pulse-animation 2s infinite;
+           filter: drop-shadow(0 0 5px var(--accent-color));
+       }
+
+       /* Fix for progress bar glow being cut off */
+       svg {
+           overflow: visible;
+       }
+       
+       /* Toggle switch styling */
+       .toggle-checkbox:checked {
+           right: 0;
+           transform: translateX(0);
+       }
+       
+       .toggle-checkbox:checked + .toggle-label {
+           background-color: var(--accent-color);
+       }
+       
+       .toggle-checkbox {
+           transition: all 0.3s ease-in-out;
+           transform: translateX(-100%);
+       }
+       
+       .toggle-label {
+           transition: background-color 0.3s ease-in-out;
+       }
+       
+       /* Volume slider styling */
+       input[type=range] {
+           -webkit-appearance: none;
+           appearance: none;
+           height: 8px;
+           border-radius: 4px;
+       }
+       
+       input[type=range]::-webkit-slider-thumb {
+           -webkit-appearance: none;
+           appearance: none;
+           width: 16px;
+           height: 16px;
+           border-radius: 50%;
+           background: var(--accent-color);
+           cursor: pointer;
+           box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+       }
+       
+       input[type=range]::-moz-range-thumb {
+           width: 16px;
+           height: 16px;
+           border-radius: 50%;
+           background: var(--accent-color);
+           cursor: pointer;
+           border: none;
+           box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+       }
+       
+       /* Settings panel styling */
+       .settings-section-header {
+           cursor: pointer;
+       }
+
+
+       @keyframes pulse-animation {
+           0% {
+               filter: drop-shadow(0 0 2px var(--accent-color));
+           }
+           50% {
+               filter: drop-shadow(0 0 8px var(--accent-color));
+           }
+           100% {
+               filter: drop-shadow(0 0 2px var(--accent-color));
+           }
+       }
+      
+       .notification {
+           position: fixed;
+           top: 20px;
+           right: 20px;
+           z-index: 1000;
+           transform: translateX(400px);
+           transition: transform 0.3s ease;
+       }
+      
+       .notification.show {
+           transform: translateX(0);
+       }
+      
+       @media (max-width: 768px) {
+           .flip-card {
+               width: 3rem;
+               height: 4rem;
+           }
+           .flip-card-front, .flip-card-back {
+               font-size: 1.5rem;
+           }
+       }
+       body.theme-dark {
+           --bg-primary-start: #111827; /* gray-900 */
+           --bg-primary-end: #1f2937; /* gray-800 */
+           --bg-secondary: #374151; /* gray-700 */
+           --text-primary: #f3f4f6; /* gray-100 */
+           --text-secondary: #d1d5db; /* gray-300 */
+           --accent-color: #818cf8; /* indigo-400 */
+           --accent-text-color: #1f2937; /* gray-800 */
+           --button-bg: #4b5563; /* gray-600 */
+           --button-text: #f3f4f6; /* gray-100 */
+           --glass-bg: rgba(55, 65, 81, 0.7);
+           --glass-border: rgba(255, 255, 255, 0.1);
+           --shadow-color-rgb: 255, 255, 255;
+           --shadow-opacity-strong: 0.05;
+           --shadow-opacity-light: 0.03;
+           --ring-color: #6366f1; /* indigo-500 */
+           --border-color: #4b5563; /* gray-600 */
+           --progress-color: #818cf8; /* indigo-400 - match accent */
+       }
+       body.theme-dark .flip-card-front,
+       body.theme-dark .flip-card-back {
+           background-color: var(--bg-secondary);
+           color: var(--text-primary); /* Override Tailwind's text-gray-800 for dark theme */
+       }
+       body.theme-dark #pomodoro-settings-panel {
+           /* background-color is already set by inline style using var(--bg-secondary) */
+           border-color: var(--border-color);
+       }
+       body.theme-light-green {
+           --bg-primary-start: #f0fdf4; /* green-50 */
+           --bg-primary-end: #dcfce7; /* green-100 */
+           --text-primary: #14532d; /* green-900 */
+           --text-secondary: #166534; /* green-800 */
+           --accent-color: #10b981; /* green-500 */
+           --accent-text-color: #ffffff; /* white */
+           --button-bg: #bbf7d0; /* green-200 */
+           --button-text: #14532d; /* green-900 */
+           --glass-bg: rgba(240, 253, 244, 0.7);
+           --glass-border: rgba(34, 197, 94, 0.2);
+           --ring-color: #4ade80; /* green-400 */
+           --border-color: #bbf7d0; /* green-200 */
+           --progress-color: #10b981; /* green-500 - match accent */
+       }
+       body.theme-animated-2 {
+           --bg-primary-start: #3b0764; /* purple-950 */
+           --bg-primary-end: #581c87; /* purple-900 */
+           --text-primary: #f5f3ff; /* purple-50 */
+           --text-secondary: #ede9fe; /* purple-100 */
+           --accent-color: #a855f7; /* purple-500 */
+           --accent-text-color: #3b0764; /* purple-950 */
+           --button-bg: #7e22ce; /* purple-700 */
+           --button-text: #f5f3ff; /* purple-50 */
+           --glass-bg: rgba(88, 28, 135, 0.7); /* purple-900 with opacity */
+           --glass-border: rgba(168, 85, 247, 0.2); /* purple-500 with opacity */
+           --ring-color: #c084fc; /* purple-400 */
+           --border-color: #d8b4fe; /* purple-300 */
+           --progress-color: #c084fc; /* purple-400 - slightly brighter than accent */
+       }
+
+
+       body.theme-light-pink {
+           --bg-primary-start: #fdf2f8; /* pink-50 */
+           --bg-primary-end: #fce7f3; /* pink-100 */
+           --text-primary: #831843; /* pink-900 */
+           --text-secondary: #9d174d; /* pink-800 */
+           --accent-color: #ec4899; /* pink-500 */
+           --accent-text-color: #ffffff; /* white */
+           --button-bg: #fbcfe8; /* pink-200 */
+           --button-text: #831843; /* pink-900 */
+           --glass-bg: rgba(253, 242, 248, 0.7);
+           --glass-border: rgba(236, 72, 153, 0.2);
+           --ring-color: #f472b6; /* pink-400 */
+           --border-color: #fbcfe8; /* pink-200 */
+           --progress-color: #ec4899; /* pink-500 - match accent */
+       }
+
+
+       @keyframes oceanWavesAnimation {
+           0% { background-position: 0% 50%; }
+           50% { background-position: 100% 50%; }
+           100% { background-position: 0% 50%; }
+       }
+
+
+       body.theme-animated-1 {
+           --text-primary: #f0f9ff; /* sky-50 */
+           --text-secondary: #e0f2fe; /* sky-100 */
+           --accent-color: #38bdf8; /* sky-400 */
+           --accent-text-color: #075985; /* sky-900 */
+           --button-bg: #7dd3fc; /* sky-300 */
+           --button-text: #0c4a6e; /* sky-800 */
+           --glass-bg: rgba(125, 211, 252, 0.5); /* sky-300 with opacity */
+           --glass-border: rgba(255, 255, 255, 0.2);
+           --ring-color: #0ea5e9; /* sky-500 */
+           --border-color: #7dd3fc; /* sky-300 */
+           --bg-primary-start: #0284c7; /* sky-700 */
+           --bg-primary-end: #22d3ee; /* cyan-400 */
+           --progress-color: #38bdf8; /* sky-400 - match accent */
+       }
+      
+       /* Apply animation directly to body.theme-animated-1 */
+       body.theme-animated-1 {
+           background: linear-gradient(45deg, #0284c7, #38bdf8, #06b6d4, #22d3ee);
+           background-size: 400% 400%;
+           animation: oceanWavesAnimation 20s ease infinite;
+       }
+       body.theme-animated-1 .flip-card-front,
+       body.theme-animated-1 .flip-card-back {
+           background-color: rgba(14, 116, 144, 0.7); /* cyan-700 with opacity */
+           color: var(--text-primary);
+       }
+
+
+       @keyframes cosmicFlowAnimation {
+           0% { background-position: 0% 0%; }
+           50% { background-position: 100% 100%; }
+           100% { background-position: 0% 0%; }
+       }
+
+
+       body.theme-animated-2 {
+           --text-primary: #f3e8ff; /* purple-50 */
+           --text-secondary: #e9d5ff; /* purple-100 */
+           --accent-color: #c084fc; /* purple-400 */
+           --accent-text-color: #3b0764; /* purple-950 */
+           --button-bg: #a855f7; /* purple-500 */
+           --button-text: #f5d0fe; /* purple-100 */
+           --glass-bg: rgba(91, 33, 182, 0.5); /* purple-800 with opacity */
+           --glass-border: rgba(255, 255, 255, 0.15);
+           --ring-color: #9333ea; /* purple-600 */
+           --border-color: #a855f7; /* purple-500 */
+           --bg-primary-start: #3b0764; /* purple-950 */
+           --bg-primary-end: #a855f7; /* purple-500 */
+       }
+      
+       /* Apply animation directly to body.theme-animated-2 */
+       body.theme-animated-2 {
+           background: linear-gradient(-45deg, #3b0764, #581c87, #a855f7, #d8b4fe);
+           background-size: 400% 400%;
+           animation: cosmicFlowAnimation 25s ease infinite;
+       }
+       body.theme-animated-2 .flip-card-front,
+       body.theme-animated-2 .flip-card-back {
+           background-color: rgba(60, 16, 101, 0.7); /* purple-900 with opacity */
+           color: var(--text-primary);
+       }
+
+
+       .theme-btn.active-theme-btn {
+           box-shadow: 0 0 0 2px var(--accent-color);
+       }
+   </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center font-sans selection:bg-indigo-100" style="background: linear-gradient(to bottom right, var(--bg-primary-start), var(--bg-primary-end)); color: var(--text-primary);">
+   <!-- Notification -->
+   <div id="notification" class="notification rounded-lg shadow-lg p-4 max-w-sm" style="background-color: var(--bg-secondary);">
+       <div class="flex items-center">
+           <div class="flex-shrink-0">
+               <i class="fas fa-check-circle text-xl" style="color: var(--accent-color);"></i>
+           </div>
+           <div class="ml-3">
+               <p id="notification-text" class="text-sm font-medium" style="color: var(--text-primary);"></p>
+           </div>
+           <button id="notification-close" class="ml-4" style="color: var(--text-secondary);">
+               <i class="fas fa-times"></i>
+           </button>
+       </div>
+   </div>
+
+
+   <div class="container mx-auto px-4 max-w-4xl">
+       <header class="text-center mb-12">
+           <nav class="flex justify-center space-x-6">
+               <button id="clock-btn" class="p-3 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 shadow-md" style="background-color: var(--accent-color); color: var(--accent-text-color); border-color: var(--ring-color);">
+                   <i class="fas fa-clock text-lg"></i>
+               </button>
+               <button id="pomodoro-btn" class="p-3 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 shadow-md" style="background-color: var(--button-bg); color: var(--button-text); border-color: var(--ring-color);">
+                   <i class="fas fa-stopwatch text-lg"></i>
+               </button>
+           </nav>
+       </header>
+
+
+       <main class="flex flex-col items-center">
+           <!-- Clock Section -->
+           <div id="clock-section" class="w-full fade-in">
+               <div class="flex justify-center items-center mb-12">
+                   <div class="text-center">
+                       <div class="flex justify-center items-center mb-6">
+                           <!-- Hours -->
+                           <div class="flip-card w-36 h-48 mx-1">
+                               <div id="hours-tens" class="flip-card-inner">
+                                   <div class="flip-card-front bg-white text-8xl font-light text-gray-800">0</div>
+                                   <div class="flip-card-back bg-white text-8xl font-light text-gray-800">0</div>
+                               </div>
+                           </div>
+                           <div class="flip-card w-36 h-48 mx-1">
+                               <div id="hours-ones" class="flip-card-inner">
+                                   <div class="flip-card-front bg-white text-8xl font-light text-gray-800">0</div>
+                                   <div class="flip-card-back bg-white text-8xl font-light text-gray-800">0</div>
+                               </div>
+                           </div>
+                          
+                           <div class="text-8xl font-light mx-6 animate-pulse" style="color: var(--text-secondary);"">:</div>
+                          
+                           <!-- Minutes -->
+                           <div class="flip-card w-36 h-48 mx-1">
+                               <div id="minutes-tens" class="flip-card-inner">
+                                   <div class="flip-card-front bg-white text-8xl font-light text-gray-800">0</div>
+                                   <div class="flip-card-back bg-white text-8xl font-light text-gray-800">0</div>
+                               </div>
+                           </div>
+                           <div class="flip-card w-36 h-48 mx-1">
+                               <div id="minutes-ones" class="flip-card-inner">
+                                   <div class="flip-card-front bg-white text-8xl font-light text-gray-800">0</div>
+                                   <div class="flip-card-back bg-white text-8xl font-light text-gray-800">0</div>
+                               </div>
+                           </div>
+                          
+                           <div class="text-8xl font-light mx-6 animate-pulse" style="color: var(--text-secondary);"">:</div>
+                          
+                           <!-- Seconds -->
+                           <div class="flip-card w-36 h-48 mx-1">
+                               <div id="seconds-tens" class="flip-card-inner">
+                                   <div class="flip-card-front bg-white text-8xl font-light text-gray-800">0</div>
+                                   <div class="flip-card-back bg-white text-8xl font-light text-gray-800">0</div>
+                               </div>
+                           </div>
+                           <div class="flip-card w-36 h-48 mx-1">
+                               <div id="seconds-ones" class="flip-card-inner">
+                                   <div class="flip-card-front bg-white text-8xl font-light text-gray-800">0</div>
+                                   <div class="flip-card-back bg-white text-8xl font-light text-gray-800">0</div>
+                               </div>
+                           </div>
+                       </div>
+                      
+                       <div class="glass-effect rounded-full px-6 py-3 inline-block">
+                           <div class="text-sm font-medium" style="color: var(--text-secondary);">
+                               <span id="date-display" class="mr-3">Monday, January 1</span>
+                               <span id="ampm-display" class="px-2 py-1 rounded-full text-xs" style="background-color: var(--accent-color); color: var(--accent-text-color); opacity: 0.7;">AM</span>
+                           </div>
+                       </div>
+                   </div>
+               </div>
+           </div>
+
+
+           <!-- Pomodoro Section -->
+           <div id="pomodoro-section" class="w-full hidden fade-in">
+               <div class="flex flex-col items-center">
+                   <div class="relative mb-8">
+                       <svg class="w-full h-full" viewBox="0 0 100 100" overflow="visible">
+                    <circle class="text-gray-200" stroke-width="4" stroke="currentColor" fill="transparent" r="42" cx="50" cy="50" />
+                    <circle id="pomodoro-progress" class="pulse-glow" stroke-width="4" stroke="currentColor" fill="transparent" r="42" cx="50" cy="50" stroke-dasharray="264" stroke-dashoffset="264" style="color: var(--progress-color);" />
+                </svg>
+                       <defs>
+                               <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                   <stop offset="0%" style="stop-color:#4f46e5"/>
+                                   <stop offset="100%" style="stop-color:#7c3aed"/>
+                               </linearGradient>
+                           </defs>
+                       </svg>
+                       <div class="absolute inset-0 flex items-center justify-center">
+                           <div class="text-center">
+                               <div id="pomodoro-time" class="text-5xl font-light mb-2" style="color: var(--text-primary);">25:00</div>
+                               <div id="pomodoro-status" class="text-sm font-medium" style="color: var(--text-secondary);">Ready to focus</div>
+                           </div>
+                       </div>
+                   </div>
+                  
+                   <div class="flex justify-center space-x-4 mb-6">
+                       <button id="pomodoro-start" class="p-4 rounded-full focus:outline-none focus:ring-2 transition-all duration-200 shadow-sm" style="background-color: var(--accent-color); color: var(--accent-text-color);">
+                           <i class="fas fa-play text-lg"></i>
+                       </button>
+                       <button id="pomodoro-reset" class="p-4 rounded-full focus:outline-none focus:ring-2 transition-all duration-200 shadow-sm" style="background-color: var(--button-bg); color: var(--button-text);">
+                           <i class="fas fa-redo text-lg"></i>
+                       </button>
+                       <button id="pomodoro-settings-btn" class="p-4 rounded-full focus:outline-none focus:ring-2 transition-all duration-200 shadow-sm" style="background-color: var(--button-bg); color: var(--button-text);">
+                           <i class="fas fa-cog text-lg"></i>
+                       </button>
+                   </div>
+                     
+                    <div class="text-center mb-4">
+                        <div id="pomodoro-session-count-display" class="font-medium text-sm opacity-70" style="color: var(--text-primary);">Sessions: 0</div>
+                    </div>
+
+                    <!-- Settings Panel (hidden by default) -->
+                    <div id="pomodoro-settings-panel" class="hidden w-full max-w-md mb-8 p-4 rounded-lg shadow-lg" style="background-color: var(--bg-secondary);">
+                        <!-- Preset Buttons -->
+                        <div class="flex space-x-3 mb-6 justify-center">
+                            <button data-minutes="25" class="pomodoro-preset px-4 py-1 rounded-full focus:outline-none transition-all duration-200 text-xs font-medium" style="background-color: var(--accent-color); color: var(--accent-text-color); opacity: 0.8;">
+                                25
+                            </button>
+                            <button data-minutes="15" class="pomodoro-preset px-4 py-1 rounded-full focus:outline-none transition-all duration-200 text-xs font-medium" style="background-color: var(--button-bg); color: var(--button-text);"">
+                                15
+                            </button>
+                            <button data-minutes="5" class="pomodoro-preset px-4 py-1 rounded-full focus:outline-none transition-all duration-200 text-xs font-medium" style="background-color: var(--button-bg); color: var(--button-text);"">
+                                5
+                            </button>
+                        </div>
+
+                        <!-- Custom Time Inputs -->
+                        <div class="flex flex-col items-center space-y-4 mb-8 p-4 bg-gray-50 rounded-lg shadow-md">
+                            <div class="text-sm font-medium" style="color: var(--text-secondary);">Custom Durations (minutes)</div>
+                            <div class="flex items-end space-x-4">
+                                <div>
+                                    <label for="custom-work-time" class="block text-xs mb-1 text-left" style="color: var(--text-secondary);">Work:</label>
+                                    <input type="number" id="custom-work-time" value="25" min="1" class="w-24 px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 sm:text-sm appearance-none [-moz-appearance:textfield]" style="background-color: var(--bg-secondary); color: var(--text-primary); border-color: var(--border-color);">
+                                </div>
+                                <div>
+                                    <label for="custom-break-time" class="block text-xs mb-1 text-left" style="color: var(--text-secondary);">Break:</label>
+                                    <input type="number" id="custom-break-time" value="5" min="1" class="w-24 px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 sm:text-sm appearance-none [-moz-appearance:textfield]" style="background-color: var(--bg-secondary); color: var(--text-primary); border-color: var(--border-color);">
+                                </div>
+                            </div>
+                            <button id="set-custom-time" class="mt-2 px-6 py-2 rounded-full focus:outline-none focus:ring-4 transition-all duration-200 text-sm font-medium shadow-sm" style="background-color: var(--accent-color); color: var(--accent-text-color); border-color: var(--ring-color);">
+                                <i class="fas fa-check mr-2"></i>Set Custom
+                            </button>
+                        </div>
+                        <!-- End Custom Time Inputs -->
+
+                        <!-- Settings Sections -->
+                        <div class="mt-4 pt-3 border-t" style="border-top-color: var(--border-color);">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="text-sm font-medium" style="color: var(--text-secondary);">Display Options</h3>
+                                <button id="toggle-display-options" class="text-xs px-2 py-1 rounded focus:outline-none transition-all duration-200" style="background-color: var(--button-bg); color: var(--button-text);">
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
+                            <div id="display-options-panel" class="hidden mb-4 pl-2">
+                                <div class="flex items-center mb-2">
+                                    <div class="relative inline-block w-10 mr-2 align-middle select-none">
+                                        <input type="checkbox" id="hide-seconds-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" style="right: 0; border-color: var(--accent-color);">
+                                        <label for="hide-seconds-toggle" class="toggle-label block overflow-hidden h-6 rounded-full cursor-pointer" style="background-color: var(--button-bg);"></label>
+                                    </div>
+                                    <label for="hide-seconds-toggle" class="text-sm" style="color: var(--text-secondary);">Hide seconds</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Theme Selector -->
+                        <div class="mt-4 pt-3 border-t" style="border-top-color: var(--border-color);">
+                            <div class="grid grid-cols-6 gap-2">
+                                <button data-theme="default" class="theme-btn w-8 h-8 rounded-full focus:outline-none transition-all duration-200 shadow-sm" style="background-color: #6366f1;"></button>
+                                <button data-theme="dark" class="theme-btn w-8 h-8 rounded-full focus:outline-none transition-all duration-200 shadow-sm" style="background-color: #1f2937;"></button>
+                                <button data-theme="light-green" class="theme-btn w-8 h-8 rounded-full focus:outline-none transition-all duration-200 shadow-sm" style="background-color: #10b981;"></button>
+                                <button data-theme="light-pink" class="theme-btn w-8 h-8 rounded-full focus:outline-none transition-all duration-200 shadow-sm" style="background-color: #ec4899;"></button>
+                                <button data-theme="animated-1" class="theme-btn w-8 h-8 rounded-full focus:outline-none transition-all duration-200 shadow-sm" style="background: linear-gradient(45deg, #0284c7, #22d3ee);"></button>
+                                <button data-theme="animated-2" class="theme-btn w-8 h-8 rounded-full focus:outline-none transition-all duration-200 shadow-sm" style="background: linear-gradient(-45deg, #3b0764, #a855f7);"></button>
+                            </div>
+                        </div>
+
+
+
+                        <!-- Custom Background Upload -->
+                        <div class="mt-6 pt-3 border-t" style="border-top-color: var(--border-color);">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="text-sm font-medium" style="color: var(--text-secondary);">Custom Background</h3>
+                                <button id="toggle-background-options" class="text-xs px-2 py-1 rounded focus:outline-none transition-all duration-200" style="background-color: var(--button-bg); color: var(--button-text);">
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
+                            <div id="background-options-panel" class="hidden mb-4 pl-2">
+                                <div class="flex flex-col space-y-3">
+                                    <div class="relative">
+                                        <button id="custom-file-button" class="w-full px-4 py-2 rounded-md focus:outline-none transition-all duration-200 text-sm text-left" style="background-color: var(--button-bg); color: var(--button-text);">
+                                            <i class="fas fa-image mr-2"></i><span id="file-name-display">Choose an image...</span>
+                                        </button>
+                                        <input type="file" id="background-upload" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                                    </div>
+                                    <button id="clear-background" class="px-4 py-2 rounded-full focus:outline-none transition-all duration-200 text-sm" style="background-color: var(--button-bg); color: var(--button-text);">
+                                        <i class="fas fa-trash-alt mr-1"></i> Clear Custom Background
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div> <!-- End Settings Panel -->
+
+                    <!-- Background music feature has been removed -->
+               </div>
+           </div>
+       </main>
+
+
+       <footer class="text-center mt-16 text-sm" style="color: var(--text-secondary);">
+       </footer>
+   </div>
+
+
+   <script>
+       // State management
+       const state = {
+           pomodoro: {
+               customWorkTime: 25 * 60,  // User-defined work session length in seconds
+               customBreakTime: 5 * 60,  // User-defined break session length in seconds
+               isWorkSession: true,      // True if current/next session is work, false for break
+               time: 25 * 60,            // Current countdown time in seconds, initially customWorkTime
+               totalTime: 25 * 60,       // Total time for the current session, initially customWorkTime
+               isRunning: false,
+               interval: null,
+               sessions: 0              // Number of completed work sessions
+           },
+           settings: {
+               hideSeconds: false        // Whether to hide seconds in the clock display
+           }
+       };
+
+
+       // Utility functions
+       const $ = id => document.getElementById(id);
+       const $$ = selector => document.querySelectorAll(selector);
+      
+       const formatTime = (seconds) => {
+           const mins = Math.floor(seconds / 60);
+           const secs = seconds % 60;
+           return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+       };
+
+
+       const showNotification = (message, type = 'success') => {
+           const notification = $('notification');
+           const text = $('notification-text');
+           const icon = notification.querySelector('i');
+          
+           text.textContent = message;
+           icon.className = type === 'success' ? 'fas fa-check-circle text-green-500 text-xl' : 'fas fa-exclamation-circle text-red-500 text-xl';
+          
+           notification.classList.add('show');
+           setTimeout(() => notification.classList.remove('show'), 3000);
+       };
+
+
+       // Clock functionality
+       const updateClock = () => {
+           const now = new Date();
+           let hours = now.getHours();
+           const ampm = hours >= 12 ? 'PM' : 'AM';
+           hours = hours % 12 || 12;
+          
+           const minutes = now.getMinutes();
+           const seconds = now.getSeconds();
+          
+           const dateStr = now.toLocaleDateString(undefined, {
+               weekday: 'long',
+               year: 'numeric',
+               month: 'long',
+               day: 'numeric'
+           });
+          
+           $('date-display').textContent = dateStr;
+           $('ampm-display').textContent = ampm;
+          
+           // Update flip cards
+           const timeStr = {
+               hours: hours.toString().padStart(2, '0'),
+               minutes: minutes.toString().padStart(2, '0'),
+               seconds: seconds.toString().padStart(2, '0')
+           };
+          
+           updateFlipCard('hours-tens', timeStr.hours[0]);
+           updateFlipCard('hours-ones', timeStr.hours[1]);
+           updateFlipCard('minutes-tens', timeStr.minutes[0]);
+           updateFlipCard('minutes-ones', timeStr.minutes[1]);
+           updateFlipCard('seconds-tens', timeStr.seconds[0]);
+           updateFlipCard('seconds-ones', timeStr.seconds[1]);
+       };
+
+
+       const updateFlipCard = (id, newDigit) => {
+           const card = $(id);
+           const front = card.querySelector('.flip-card-front');
+           const back = card.querySelector('.flip-card-back');
+          
+           if (front.textContent !== newDigit) {
+               card.classList.add('flip-animate');
+               back.textContent = front.textContent;
+               front.textContent = newDigit;
+               setTimeout(() => card.classList.remove('flip-animate'), 500);
+           }
+       };
+
+
+       // Pomodoro functionality
+       const updatePomodoroDisplay = () => {
+           $('pomodoro-time').textContent = formatTime(state.pomodoro.time);
+          
+           const progress = ((state.pomodoro.totalTime - state.pomodoro.time) / state.pomodoro.totalTime) * 264;
+           $('pomodoro-progress').style.strokeDashoffset = 264 - progress;
+          
+           const status = state.pomodoro.isRunning ?
+               (state.pomodoro.isWorkSession ? 'Focus time' : 'Break time') :
+               (state.pomodoro.isWorkSession ? 'Ready to focus' : 'Ready for break');
+           $('pomodoro-status').textContent = status;
+       };
+
+
+       const startPomodoro = () => {
+           if (state.pomodoro.isRunning) {
+               clearInterval(state.pomodoro.interval);
+               state.pomodoro.isRunning = false;
+               $('pomodoro-start').innerHTML = `<i class="fas fa-play text-lg"></i>`;
+               $('pomodoro-progress').classList.remove('pulse-glow');
+           } else {
+               state.pomodoro.isRunning = true;
+               $('pomodoro-start').innerHTML = `<i class="fas fa-pause text-lg"></i>`;
+               $('pomodoro-progress').classList.add('pulse-glow');
+
+
+               // If timer was at 0 (e.g. previous session ended or first start), ensure time is set for current session type
+               if (state.pomodoro.time <= 0) { // Check for <=0 to handle fresh starts
+                   if (state.pomodoro.isWorkSession) {
+                       state.pomodoro.time = state.pomodoro.customWorkTime;
+                       state.pomodoro.totalTime = state.pomodoro.customWorkTime;
+                   } else {
+                       state.pomodoro.time = state.pomodoro.customBreakTime;
+                       state.pomodoro.totalTime = state.pomodoro.customBreakTime;
+                   }
+               }
+               updatePomodoroDisplay(); // Update display immediately
+
+
+               state.pomodoro.interval = setInterval(() => {
+                   state.pomodoro.time--;
+                   updatePomodoroDisplay();
+                  
+                   if (state.pomodoro.time < 0) { // Use < 0 to allow 00:00 to display before switching
+                       clearInterval(state.pomodoro.interval);
+                       state.pomodoro.isRunning = false;
+                      
+                       if (state.pomodoro.isWorkSession) {
+                           // Work session ended
+                           state.pomodoro.sessions++;
+                           updateSessionsDisplay();
+                           showNotification('Focus session completed! Time for a break.');
+                           state.pomodoro.isWorkSession = false;
+                           state.pomodoro.time = state.pomodoro.customBreakTime;
+                           state.pomodoro.totalTime = state.pomodoro.customBreakTime;
+                           $('pomodoro-start').innerHTML = '<i class="fas fa-play text-lg"></i>';
+                       } else {
+                           // Break session ended
+                           showNotification("Break's over! Ready for the next focus session?");
+                           state.pomodoro.isWorkSession = true;
+                           state.pomodoro.time = state.pomodoro.customWorkTime;
+                           state.pomodoro.totalTime = state.pomodoro.customWorkTime;
+                           $('pomodoro-start').innerHTML = '<i class="fas fa-play text-lg"></i>';
+                       }
+                       $('pomodoro-progress').classList.remove('pulse-glow');
+                       updatePomodoroDisplay(); // Update display for new session state
+                   }
+               }, 1000);
+           }
+       };
+
+
+       const resetPomodoro = () => {
+           clearInterval(state.pomodoro.interval);
+           state.pomodoro.isRunning = false;
+          
+           state.pomodoro.isWorkSession = true; // Reset always goes to a work session
+           state.pomodoro.time = state.pomodoro.customWorkTime; // Reset to current custom work time
+           state.pomodoro.totalTime = state.pomodoro.customWorkTime;
+          
+           updatePomodoroDisplay();
+          
+           $('pomodoro-start').innerHTML = '<i class="fas fa-play mr-2"></i>Start Focus';
+           $('pomodoro-start').classList.remove('pulse-glow');
+
+
+           // Deselect presets if any were active
+           $$('.pomodoro-preset').forEach(btn => {
+               btn.className = 'pomodoro-preset px-5 py-2 rounded-full focus:outline-none transition-all duration-200 text-sm font-medium';
+               btn.style.backgroundColor = 'var(--button-bg)';
+               btn.style.color = 'var(--button-text)';
+               btn.style.opacity = '1';
+           });
+       };
+
+
+       const updateSessionsDisplay = () => {
+           $('pomodoro-session-count-display').textContent = `Sessions: ${state.pomodoro.sessions}`;
+       };
+
+
+       const switchTab = (tab) => {
+           const clockSection = $('clock-section');
+           const pomodoroSection = $('pomodoro-section');
+           const clockBtn = $('clock-btn');
+           const pomodoroBtn = $('pomodoro-btn');
+          
+           if (tab === 'clock') {
+               clockSection.classList.remove('hidden');
+               pomodoroSection.classList.add('hidden');
+               clockBtn.className = 'px-6 py-2 rounded-full text-white bg-indigo-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-300';
+               pomodoroBtn.className = 'px-6 py-2 rounded-full text-gray-600 hover:text-gray-800 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-200';
+           } else {
+               clockSection.classList.add('hidden');
+               pomodoroSection.classList.remove('hidden');
+               pomodoroBtn.className = 'px-6 py-2 rounded-full text-white bg-indigo-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-300';
+               clockBtn.className = 'px-6 py-2 rounded-full text-gray-600 hover:text-gray-800 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-200';
+              
+               // Request notification permission
+               if ('Notification' in window && Notification.permission === 'default') {
+                   Notification.requestPermission();
+               }
+           }
+       };
+
+
+       // Event listeners
+       $('clock-btn').addEventListener('click', () => switchTab('clock'));
+       $('pomodoro-btn').addEventListener('click', () => switchTab('pomodoro'));
+       $('pomodoro-start').addEventListener('click', startPomodoro);
+       $('pomodoro-reset').addEventListener('click', resetPomodoro);
+       $('pomodoro-settings-btn').addEventListener('click', () => {
+           $('pomodoro-settings-panel').classList.toggle('hidden');
+       });
+       $('notification-close').addEventListener('click', () => $('notification').classList.remove('show'));
+
+
+       // Pomodoro presets
+       $$('.pomodoro-preset').forEach(button => {
+           button.addEventListener('click', function() {
+               // Deselect all preset buttons
+               $$('.pomodoro-preset').forEach(btn => {
+                   btn.className = 'pomodoro-preset px-5 py-2 rounded-full focus:outline-none transition-all duration-200 text-sm font-medium';
+                   btn.style.backgroundColor = 'var(--button-bg)';
+                   btn.style.color = 'var(--button-text)';
+                   btn.style.opacity = '1';
+               });
+               // Select the clicked button
+               this.className = 'pomodoro-preset px-5 py-2 rounded-full focus:outline-none transition-all duration-200 text-sm font-medium active-preset-btn'; // Added active-preset-btn for potential specific styling
+               this.style.backgroundColor = 'var(--accent-color)';
+               this.style.color = 'var(--accent-text-color)';
+               this.style.opacity = '0.8'; // Match initial active preset styling if desired
+              
+               const minutes = parseInt(this.dataset.minutes);
+               state.pomodoro.customWorkTime = minutes * 60; // Set custom work time to preset
+               // customBreakTime remains unchanged by presets
+               state.pomodoro.isWorkSession = true; // Presets always set a work session
+              
+               state.pomodoro.time = state.pomodoro.customWorkTime;
+               state.pomodoro.totalTime = state.pomodoro.customWorkTime;
+               updatePomodoroDisplay();
+              
+               if (state.pomodoro.isRunning) {
+                   clearInterval(state.pomodoro.interval);
+                   state.pomodoro.isRunning = false;
+                   $('pomodoro-start').innerHTML = '<i class="fas fa-play mr-2"></i>Start Focus';
+                   $('pomodoro-start').classList.remove('pulse-glow');
+               }
+               showNotification(`Preset: ${minutes} min focus time set.`);
+           });
+       });
+
+
+       // Custom time setting event listener
+       $('set-custom-time').addEventListener('click', () => {
+           const workMinutes = parseInt($('custom-work-time').value);
+           const breakMinutes = parseInt($('custom-break-time').value);
+
+
+           if (isNaN(workMinutes) || workMinutes < 1 || isNaN(breakMinutes) || breakMinutes < 1) {
+               showNotification('Error: Please enter valid numbers (>= 1) for custom durations.');
+               return;
+           }
+
+
+           state.pomodoro.customWorkTime = workMinutes * 60;
+           state.pomodoro.customBreakTime = breakMinutes * 60;
+           state.pomodoro.isWorkSession = true; // Always reset to a work session
+          
+           if (state.pomodoro.isRunning) {
+               clearInterval(state.pomodoro.interval);
+               state.pomodoro.isRunning = false;
+               $('pomodoro-start').innerHTML = '<i class="fas fa-play mr-2"></i>Start Focus';
+               $('pomodoro-start').classList.remove('pulse-glow');
+           }
+          
+           state.pomodoro.time = state.pomodoro.customWorkTime;
+           state.pomodoro.totalTime = state.pomodoro.customWorkTime;
+           updatePomodoroDisplay();
+           showNotification(`Custom times: Work ${workMinutes} min, Break ${breakMinutes} min set.`);
+
+
+           // Deselect presets
+           $$('.pomodoro-preset').forEach(btn => {
+               btn.className = 'pomodoro-preset px-5 py-2 rounded-full focus:outline-none transition-all duration-200 text-sm font-medium';
+               btn.style.backgroundColor = 'var(--button-bg)';
+               btn.style.color = 'var(--button-text)';
+               btn.style.opacity = '1';
+           });
+       });
+
+
+       // Keyboard shortcuts
+       document.addEventListener('keydown', (e) => {
+           if (e.key === ' ' && !$('pomodoro-section').classList.contains('hidden')) {
+               e.preventDefault();
+               startPomodoro();
+           }
+           if (e.key === 'r' && !$('pomodoro-section').classList.contains('hidden')) {
+               e.preventDefault();
+               resetPomodoro();
+           }
+           if (e.key === '1') switchTab('clock');
+           if (e.key === '2') switchTab('pomodoro');
+       });
+
+
+       // Hide seconds functionality
+       const updateClockDisplay = () => {
+           // If hiding seconds is enabled
+           if (state.settings.hideSeconds) {
+               $('seconds-tens').parentElement.style.display = 'none';
+               $('seconds-ones').parentElement.style.display = 'none';
+               // Hide the second colon too
+               document.querySelectorAll('.text-8xl.font-light.mx-6.animate-pulse')[1].style.display = 'none';
+           } else {
+               $('seconds-tens').parentElement.style.display = '';
+               $('seconds-ones').parentElement.style.display = '';
+               document.querySelectorAll('.text-8xl.font-light.mx-6.animate-pulse')[1].style.display = '';
+           }
+       };
+
+       // Hide seconds toggle event listener
+       $('hide-seconds-toggle').addEventListener('change', function() {
+           state.settings.hideSeconds = this.checked;
+           localStorage.setItem('focus-time-hide-seconds', this.checked);
+           updateClockDisplay();
+       });
+
+       // Custom background functionality
+       const backgroundUpload = $('background-upload');
+       const clearBackground = $('clear-background');
+
+       backgroundUpload.addEventListener('change', function(e) {
+           if (this.files && this.files[0]) {
+               const reader = new FileReader();
+               
+               reader.onload = function(e) {
+                   document.body.style.backgroundImage = `url(${e.target.result})`;
+                   document.body.style.backgroundSize = 'cover';
+                   document.body.style.backgroundPosition = 'center';
+                   localStorage.setItem('focus-time-background', e.target.result);
+               }
+               
+               reader.readAsDataURL(this.files[0]);
+           }
+       });
+
+       clearBackground.addEventListener('click', function() {
+           document.body.style.removeProperty('background-image');
+           document.body.style.background = 'linear-gradient(to bottom right, var(--bg-primary-start), var(--bg-primary-end))';
+           localStorage.removeItem('focus-time-background');
+           backgroundUpload.value = '';
+       });
+
+       // Toggle panels functionality
+       const togglePanels = {
+           'toggle-display-options': 'display-options-panel',
+           'toggle-background-options': 'background-options-panel'
+       };
+       
+       Object.keys(togglePanels).forEach(toggleId => {
+           const panelId = togglePanels[toggleId];
+           $(toggleId).addEventListener('click', function() {
+               const panel = $(panelId);
+               const icon = this.querySelector('i');
+               
+               if (panel.classList.contains('hidden')) {
+                   panel.classList.remove('hidden');
+                   icon.className = 'fas fa-chevron-up';
+               } else {
+                   panel.classList.add('hidden');
+                   icon.className = 'fas fa-chevron-down';
+               }
+           });
+       });
+       
+       // Custom file input styling
+       $('background-upload').addEventListener('change', function() {
+           if (this.files && this.files[0]) {
+               $('file-name-display').textContent = this.files[0].name;
+           } else {
+               $('file-name-display').textContent = 'Choose an image...';
+           }
+       });
+       
+       // Load saved settings
+       // Load hide seconds setting
+       const savedHideSeconds = localStorage.getItem('focus-time-hide-seconds');
+       if (savedHideSeconds !== null) {
+           state.settings.hideSeconds = savedHideSeconds === 'true';
+           $('hide-seconds-toggle').checked = state.settings.hideSeconds;
+       }
+
+       // Load saved background
+       const savedBackground = localStorage.getItem('focus-time-background');
+       if (savedBackground) {
+           document.body.style.backgroundImage = `url(${savedBackground})`;
+           document.body.style.backgroundSize = 'cover';
+           document.body.style.backgroundPosition = 'center';
+       }
+
+       // Initialize
+       updateClock();
+       setInterval(updateClock, 1000);
+       updatePomodoroDisplay();
+       updateSessionsDisplay();
+       updateClockDisplay();
+
+
+       // Theme Switcher Logic
+       const themeButtons = $$('.theme-btn');
+       const body = document.body;
+       const currentThemeKey = 'focus-time-theme';
+
+
+       const applyTheme = (themeName) => {
+           // Remove any existing theme classes like theme-dark, theme-light-green etc.
+           const themeClasses = Array.from(body.classList).filter(cls => cls.startsWith('theme-'));
+           body.classList.remove(...themeClasses);
+
+
+           // Manage body inline background style for animated vs static themes
+           if (themeName === 'animated-1' || themeName === 'animated-2') {
+               // For animated themes, explicitly remove the inline style to let CSS animations work
+               body.style.removeProperty('background');
+           } else {
+               // For static themes, set the gradient background using CSS variables
+               body.style.background = 'linear-gradient(to bottom right, var(--bg-primary-start), var(--bg-primary-end))';
+           }
+          
+           if (themeName !== 'default') {
+               body.classList.add(`theme-${themeName}`);
+           }
+           localStorage.setItem(currentThemeKey, themeName);
+
+
+           themeButtons.forEach(btn => {
+               if (btn.dataset.theme === themeName) {
+                   btn.classList.add('active-theme-btn');
+               } else {
+                   btn.classList.remove('active-theme-btn');
+               }
+           });
+       };
+
+
+       themeButtons.forEach(button => {
+           button.addEventListener('click', () => {
+               const themeName = button.dataset.theme;
+               applyTheme(themeName);
+           });
+       });
+
+
+       const savedTheme = localStorage.getItem(currentThemeKey);
+       if (savedTheme) {
+           applyTheme(savedTheme);
+       } else {
+           applyTheme('default'); // Apply default if no theme is saved
+       }
+   </script>
+</body>
+</html>
+
