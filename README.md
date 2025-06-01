@@ -56,13 +56,8 @@ Hide/show seconds toggle
 
 Preferences saved locally
 
-## 🚀 How to Use
 
-1. **Clock Mode** - View current time with beautiful animations  
-2. **Timer Mode** - Select duration, hit start, and focus on your work  
-3. **Customize** - Click settings to personalize themes and display options  
-
-The app automatically cycles between work and break sessions, keeping you productive without burning out.
+--- 
 
 ## 🛠️ Built With
 
